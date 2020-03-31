@@ -218,7 +218,7 @@ class C4(tfds.core.BeamBasedBuilder):
       file_paths["wet_files"].extend(wet_files)
 
     page_content_pcollection = self._get_page_content(
-        pipeline, file_paths, os.path.join(dl_manager.manual_dir, "c4"))
+        pipeline, file_paths, dl_manager.manual_dir)
     return [
         tfds.core.SplitGenerator(
             name=tfds.Split.TRAIN,
@@ -246,8 +246,8 @@ class C4(tfds.core.BeamBasedBuilder):
     # Output: url, text
     page_content = (
         pipeline
-        | beam.Create(file_paths["wet_urls"], dl_dir=dl_dir)
-        | beam.FlatMap(c4_utils.split_wet_file)
+        | beam.Create(file_paths["wet_urls"])
+        | beam.FlatMap(c4_utils.split_wet_file, dl_dir=dl_dir)
         | beam.Filter(c4_utils.is_valid_length))
 
     # Optionally filter for RealNews domains.

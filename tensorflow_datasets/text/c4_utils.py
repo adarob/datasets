@@ -81,8 +81,6 @@ def _load_sentence_tokenizer():
     return nltk.data.load("nltk:tokenizers/punkt/english.pickle")
 
 
-
-
 def _get_sentences(text):
   global _SENTENCE_TOKENIZER
   if not _SENTENCE_TOKENIZER:
@@ -345,12 +343,11 @@ def split_wet_file(wet_file_url, dl_dir, counter_inc_fn=None):
     counter_inc_fn = get_counter_inc_fn("split-wet-file")
 
   wet_file_path = os.path.join(dl_dir, os.path.basename(wet_file_url))
-  if not tf.io.gfile.exist(wet_file_path):
+  if not tf.io.gfile.exists(wet_file_path):
     counter_inc_fn("download")
     with tempfile.NamedTemporaryFile(mode="wb") as f:
       urllib.request.urlretrieve(wet_file_url, f.name)
-      tf.io.gfile.Copy(f.name, wet_file_path)
-
+      tf.io.gfile.copy(f.name, wet_file_path)
 
   counter_inc_fn("wet-file")
   logging.info("Splitting file: %s", wet_file_path)
