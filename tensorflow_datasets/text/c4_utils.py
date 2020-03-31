@@ -24,8 +24,11 @@ import functools
 import gzip
 import hashlib
 import io
+import os
 import re
+import tempfile
 import threading
+import urllib.request
 
 from absl import logging
 import tensorflow.compat.v2 as tf
@@ -336,12 +339,21 @@ def remove_duplicate_text(pages):
   return final_docs
 
 
-def split_wet_file(wet_file_path, counter_inc_fn=None):
+def split_wet_file(wet_file_url, dl_dir, counter_inc_fn=None):
   """Split a WET file into separate pages."""
-  logging.info("Splitting file: %s", wet_file_path)
   if not counter_inc_fn:
     counter_inc_fn = get_counter_inc_fn("split-wet-file")
+
+  wet_file_path = os.path.join(dl_dir, os.path.basename(wet_file_url))
+  if not tf.io.gfile.exist(wet_file_path):
+    counter_inc_fn("download")
+    with tempfile.NamedTemporaryFile(mode="wb") as f:
+      urllib.request.urlretrieve(wet_file_url, f.name)
+      tf.io.gfile.Copy(f.name, wet_file_path)
+
+
   counter_inc_fn("wet-file")
+  logging.info("Splitting file: %s", wet_file_path)
 
   with tf.io.gfile.GFile(wet_file_path, "rb") as f, gzip.GzipFile(
       fileobj=f) as g:

@@ -201,7 +201,8 @@ class C4(tfds.core.BeamBasedBuilder):
     for wet_urls_path in file_paths["wet_urls"]:
       with tf.io.gfile.GFile(wet_urls_path) as f:
         wet_urls.extend(["%s/%s" % (_DOWNLOAD_HOST, l.strip()) for l in f])
-    file_paths.update(dl_manager.download({"wet_files": wet_urls}))
+    file_paths["wet_urls"] = wet_urls
+    # file_paths.update(dl_manager.download({"wet_files": wet_urls}))
 
     for cc_version in manual_cc_versions:
       cc_dir = os.path.join(dl_manager.manual_dir, cc_version)
@@ -216,7 +217,8 @@ class C4(tfds.core.BeamBasedBuilder):
           len(wet_files), cc_version)
       file_paths["wet_files"].extend(wet_files)
 
-    page_content_pcollection = self._get_page_content(pipeline, file_paths)
+    page_content_pcollection = self._get_page_content(
+        pipeline, file_paths, os.path.join(dl_manager.manual_dir, "c4"))
     return [
         tfds.core.SplitGenerator(
             name=tfds.Split.TRAIN,
@@ -236,7 +238,7 @@ class C4(tfds.core.BeamBasedBuilder):
         ),
     ]
 
-  def _get_page_content(self, pipeline, file_paths):
+  def _get_page_content(self, pipeline, file_paths, dl_dir):
     """Build PCollection of un-split page content."""
     beam = tfds.core.lazy_imports.apache_beam
 
@@ -244,7 +246,7 @@ class C4(tfds.core.BeamBasedBuilder):
     # Output: url, text
     page_content = (
         pipeline
-        | beam.Create(file_paths["wet_files"])
+        | beam.Create(file_paths["wet_urls"], dl_dir=dl_dir)
         | beam.FlatMap(c4_utils.split_wet_file)
         | beam.Filter(c4_utils.is_valid_length))
 
